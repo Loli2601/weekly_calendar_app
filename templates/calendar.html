@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weekly Calendar</title>
+    <link rel="stylesheet" href="static/css/styles.css">  <!-- Linking to your CSS file -->
+</head>
+<body>
+    <h1>Weekly Calendar</h1>
+    <div class="week-container">
+        {% for day in week_dates %}
+        <div class="day-box">
+            <h2>{{ day }}</h2>  <!-- Displaying the day -->
+            <a href="{{ url_for('day', day=day) }}">View Schedule</a>  <!-- Link to view schedule for the day -->
+            <form action="{{ url_for('upload_picture', day=day) }}" method="POST" enctype="multipart/form-data">
+                <input type="file" name="picture">  <!-- File upload for picture -->
+                <button type="submit">Upload Picture</button>
+            </form>
+            <form action="{{ url_for('add_song', day=day) }}" method="POST">
+                <input type="text" name="song_link" placeholder="Song link">  <!-- Input for song link -->
+                <button type="submit">Add Song</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

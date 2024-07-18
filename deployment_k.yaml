@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: calendar-app
+  template:
+    metadata:
+      labels:
+        app: calendar-app
+    spec:
+      containers:
+      - name: calendar-app
+        image: hilabarak/app_py:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_USERNAME
+          value: calendar-app
+        - name: DB_PASSWORD
+          value: hue882gjng
+        - name: DB_HOST
+          value: mongodb
+        - name: DB_DATABASE
+          value: calendar_dbexit
+        - name: SECRET_KEY
+          value: 3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589

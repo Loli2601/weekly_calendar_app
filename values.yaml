@@ -1,0 +1,10 @@
+architecture: standalone
+auth:
+  enabled: true
+  rootPassword: pQVgtfExFU
+  usernames:
+    - calendar-app
+  passwords:
+    - hue882gjng
+  databases:
+    - calendar_dbexit

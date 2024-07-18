@@ -1,0 +1,4 @@
+.env
+mongodb 
+mongodb-deployment.yaml
+mongodb-service.yaml

@@ -1,0 +1,27 @@
+apiVersion: v1
+app: calendar-app
+
+
+image:
+  repository: hilabarak/app_py
+  tag: latest
+
+
+service:
+  type: ClusterIP
+  port: 5000
+
+env:
+  SECRET_KEY: 3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589
+  DB_USERNAME: calendar-app
+  DB_PASSWORD: hue882gjng
+  DB_HOST: mongodb
+  DB_DATABASE: calendar_dbexit
+  DB_PORT: 27017
+
+deployment:
+  replicas: 3
+  repository: 
+    name: hilabarak
+    image: app_py
+    tag: latest

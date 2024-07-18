@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Day Schedule</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Schedule for {{ day }}</h1>
+
+    <!-- Form to add a new event -->
+    <form action="{{ url_for('day', day=day) }}" method="POST">
+        <label for="hour">Hour:</label>
+        <input type="text" name="hour" placeholder="HH:MM" required>
+        <label for="text">Event:</label>
+        <input type="text" name="text" placeholder="Event description" required>
+        <button type="submit">Add Event</button>
+    </form>
+
+    <!-- List of events -->
+    <h2>Events</h2>
+    <ul>
+        {% for event in events %}
+        <li>{{ event['hour'] }}: {{ event['text'] }}</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Display uploaded picture if available -->
+    {% if events|length > 0 and events[0].get('picture_path') %}
+        <h2>Uploaded Picture</h2>
+        <img src="{{ url_for('static', filename=events[0]['picture_path']) }}" alt="Uploaded Picture" style="max-width: 100%; height: auto;">
+    {% endif %}
+
+    <!-- Form to upload a picture -->
+    <form action="{{ url_for('upload_picture', day=day) }}" method="POST" enctype="multipart/form-data">
+        <label for="picture">Upload Picture:</label>
+        <input type="file" name="picture" required>
+        <button type="submit">Upload Picture</button>
+    </form>
+
+    <!-- Form to add a song -->
+    <form action="{{ url_for('add_song', day=day) }}" method="POST">
+        <label for="song_link">Song Link:</label>
+        <input type="text" name="song_link" placeholder="URL to song" required>
+        <button type="submit">Add Song</button>
+    </form>
+
+    <!-- Back to calendar link -->
+    <a href="{{ url_for('index') }}">Back to Calendar</a>
+</body>
+</html>
