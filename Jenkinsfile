@@ -1,53 +1,31 @@
 pipeline {
     agent any
-
     environment {
-        DOCKER_IMAGE = "hilabarak/app_py:latest"
-        DOCKER_REGISTRY_CREDENTIALS = 'dockerhub-credentials' // Set this in Jenkins
-        KUBECONFIG_CREDENTIALS = 'kubeconfig-credentials' // Set this in Jenkins
+        SECRET_KEY = '3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589'
+        DB_USERNAME = 'calendar-app'
+        DB_PASSWORD = 'hue882gjng'
+        DB_HOST = 'mongodb'
+        DB_DATABASE = 'calendar_db'
+        DB_PORT = '27017'
     }
-
     stages {
-        stage('Clone Repository') {
+        stage('Build') {
             steps {
-                git 'https://github.com/Loli2601/weekly_calendar_app.git'
+                echo 'Building...'
+                sh 'docker build -t hilabarak/app_py:latest .'
             }
         }
-
-        stage('Build Docker Image') {
+        stage('Test') {
             steps {
-                script {
-                    dockerImage = docker.build("${DOCKER_IMAGE}")
-                }
+                echo 'Testing...'
+                // Add your test steps here
             }
         }
-
-        stage('Push Docker Image') {
+        stage('Deploy') {
             steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_REGISTRY_CREDENTIALS}") {
-                        dockerImage.push()
-                    }
-                }
+                echo 'Deploying...'
+                sh 'helm upgrade --install calendar-app ./my-flask-app'
             }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                script {
-                    withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS}", variable: 'KUBECONFIG')]) {
-                        sh """
-                        helm upgrade --install my-flask-app ./my-flask-app --set image.repository=hilabarak/app_py --set image.tag=latest
-                        """
-                    }
-                }
-            }
-        }
-    }
-
-    post {
-        always {
-            cleanWs()
         }
     }
 }
