@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        SECRET_KEY = '3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589'
+        SECRET_KEY = credentials('jenkins-secret-key-id')
         DB_USERNAME = 'calendar-app'
         DB_PASSWORD = 'hue882gjng'
         DB_HOST = 'mongodb'
@@ -9,23 +9,38 @@ pipeline {
         DB_PORT = '27017'
     }
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                echo 'Building...'
-                sh 'docker build -t hilabarak/app_py:latest .'
+                git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
             }
         }
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                echo 'Testing...'
-                // Add your test steps here
+                script {
+                    docker.build("hilabarak/app_py:latest")
+                }
             }
         }
-        stage('Deploy') {
+        stage('Push Docker Image') {
             steps {
-                echo 'Deploying...'
-                sh 'helm upgrade --install calendar-app ./my-flask-app'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
+                        docker.image("hilabarak/app_py:latest").push()
+                    }
+                }
             }
+        }
+        stage('Deploy with Helm') {
+            steps {
+                script {
+                    sh 'helm upgrade --install calendar-app ./my-flask-app --namespace default'
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()
         }
     }
 }
