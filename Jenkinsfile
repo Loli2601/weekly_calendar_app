@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        SECRET_KEY = credentials('jenkins-secret-key-id')
+        SECRET_KEY = '3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589'
         DB_USERNAME = 'calendar-app'
         DB_PASSWORD = 'hue882gjng'
         DB_HOST = 'mongodb'
@@ -11,8 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
-            }
+                git branch: 'Feature', url: 'https://github.com/Loli2601/weekly_calendar_app/tree/Feature.git'
         }
         stage('Build Docker Image') {
             steps {
