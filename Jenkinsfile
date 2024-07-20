@@ -1,45 +1,78 @@
 pipeline {
     agent any
+
     environment {
-        SECRET_KEY = '3f5eed7b6884e653ca2debd0653a92bfe9389a0351dd9589'
-        DB_USERNAME = 'calendar-app'
-        DB_PASSWORD = 'hue882gjng'
-        DB_HOST = 'mongodb'
-        DB_DATABASE = 'calendar_db'
-        DB_PORT = '27017'
+        SECRET_KEY = credentials('jenkins-secret-key-id')
+        DB_USERNAME = credentials('jenkins-db-username-id')
+        DB_PASSWORD = credentials('jenkins-db-password-id')
     }
+
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
+            }
         }
-        stage('Build Docker Image') {
+
+        stage('Build Image') {
             steps {
                 script {
-                    docker.build("hilabarak/app_py:latest")
+                    def image = docker.build("hilabarak/app_py:${env.BUILD_ID}")
                 }
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Test') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        docker.image("hilabarak/app_py:latest").push()
+                    docker.image("hilabarak/app_py:${env.BUILD_ID}").inside {
+                        // Add your test commands here
+                        sh 'echo Running tests...'
                     }
                 }
             }
         }
-        stage('Deploy with Helm') {
+
+        stage('Merge Changes') {
+            when {
+                branch 'main'
+            }
             steps {
                 script {
-                    sh 'helm upgrade --install calendar-app ./my-flask-app --namespace default'
+                    sh '''
+                    git config user.email "jenkins@company.com"
+                    git config user.name "Jenkins CI"
+                    git fetch origin
+                    git checkout -b merge-branch
+                    git merge origin/develop --no-ff -m "Merging changes from develop branch"
+                    git push origin merge-branch
+                    '''
+                }
+            }
+        }
+
+        stage('Push to Main') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    sh '''
+                    git checkout main
+                    git merge merge-branch
+                    git push origin main
+                    '''
                 }
             }
         }
     }
+
     post {
-        always {
-            cleanWs()
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
 }
