@@ -13,6 +13,7 @@ pipeline {
             steps {
                 git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
         }
+    }
         stage('Build Docker Image') {
             steps {
                 script {
