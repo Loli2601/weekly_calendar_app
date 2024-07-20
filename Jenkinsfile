@@ -11,7 +11,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'Feature', url: 'https://github.com/Loli2601/weekly_calendar_app/tree/Feature.git'
+                git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
         }
         stage('Build Docker Image') {
             steps {
