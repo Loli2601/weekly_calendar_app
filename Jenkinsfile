@@ -8,71 +8,28 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Build') {
             steps {
-                git branch: 'main', url: 'https://github.com/Loli2601/weekly_calendar_app.git'
+                echo 'Building...'
+                sh 'docker build -t hilabarak/app_py:latest .'
             }
         }
-
-        stage('Build Image') {
-            steps {
-                script {
-                    def image = docker.build("hilabarak/app_py:${env.BUILD_ID}")
-                }
-            }
-        }
-
         stage('Test') {
             steps {
-                script {
-                    docker.image("hilabarak/app_py:${env.BUILD_ID}").inside {
-                        // Add your test commands here
-                        sh 'echo Running tests...'
-                    }
-                }
+                echo 'Testing...'
+                // Add your test steps here
             }
         }
-
-        stage('Merge Changes') {
-            when {
-                branch 'main'
-            }
+        stage('Deploy') {
             steps {
-                script {
-                    sh '''
-                    git config user.email "jenkins@company.com"
-                    git config user.name "Jenkins CI"
-                    git fetch origin
-                    git checkout -b merge-branch
-                    git merge origin/develop --no-ff -m "Merging changes from develop branch"
-                    git push origin merge-branch
-                    '''
-                }
-            }
-        }
-
-        stage('Push to Main') {
-            when {
-                branch 'main'
-            }
-            steps {
-                script {
-                    sh '''
-                    git checkout main
-                    git merge merge-branch
-                    git push origin main
-                    '''
-                }
+                echo 'Deploying...'
+                sh 'helm upgrade --install calendar-app ./my-flask-app'
             }
         }
     }
-
     post {
-        success {
-            echo 'Pipeline succeeded!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            cleanWs()
         }
     }
 }
