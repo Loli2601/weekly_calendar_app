@@ -140,6 +140,13 @@ pipeline {
                     }
                 }
             }
+            
+            stage('Archive Jenkinsfile') {
+            steps {
+                archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
+                }
+             }
+        
         }
     }
 }
