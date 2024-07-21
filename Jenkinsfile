@@ -1,35 +1,145 @@
+
 pipeline {
-    agent any
+    agent {
+        kubernetes {
+            yamlFile 'jenkins/runner.yaml'
+            defaultContainer 'builder'
+        }
+    }
 
     environment {
-        SECRET_KEY = credentials('jenkins-secret-key-id')
-        DB_USERNAME = credentials('jenkins-db-username-id')
-        DB_PASSWORD = credentials('jenkins-db-password-id')
+        DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
+        DOCKERHUB_URL = 'https://registry.hub.docker.com'
+
+        GITHUB_API_URL = 'https://api.github.com' // For pull requests
+        GITHUB_REPO = 'Loli2601/weekly_calendar_app' 
+
+        HELM_CHART_REPO = "github.com/Loli2601/weekly_calendar_app_chart.git"
+        HELM_CHART_PATH = 'calendar_app/'
+        COMMIT_MESSAGE = "Updated chart version by Jenkins to 1.0.${env.BUILD_NUMBER}"
     }
 
     stages {
-        stage('Build') {
+        stage("Checkout code") {
             steps {
-                echo 'Building...'
-                sh 'docker build -t hilabarak/app_py:latest .'
+                checkout scm
             }
         }
-        stage('Test') {
+
+        stage("Setup tests") {
             steps {
-                echo 'Testing...'
-                // Add your test steps here
+                sh "apk update && apk add py-pip"
+                sh "pip install -r requirements.txt -r tests/requirements.txt"
             }
         }
-        stage('Deploy') {
+
+        stage("Run tests") {
             steps {
-                echo 'Deploying...'
-                sh 'helm upgrade --install calendar-app ./my-flask-app'
+                sh "pytest --cov"
             }
         }
-    }
-    post {
-        always {
-            cleanWs()
+
+        stage("Build docker image") {
+            steps {
+                script {
+                    dockerImage = docker.build("${DOCKER_IMAGE}:1.0.${env.BUILD_NUMBER}", "--no-cache .")
+                }
+            }
+        }
+
+        stage('Create merge request') {
+            when {
+                not {
+                    branch 'main'
+                }
+            }
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'GitHub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                    script {
+                        def branchName = env.BRANCH_NAME
+                        def pullRequestTitle = "Merge ${branchName} into main"
+                        def pullRequestBody = "Automatically generated merge request for branch ${branchName} from Jenkins"
+
+                        sh """
+                            curl -X POST -u ${PASSWORD}:x-oauth-basic \
+                            -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}", "base": "main" }' \
+                            ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Push Docker image') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    docker.withRegistry(DOCKERHUB_URL, 'DockerHub-cred') {
+                        dockerImage.push("1.0.${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+
+        stage('Clean Workspace') {
+            when {
+                branch 'main'
+            }
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Checkout Helm Chart Repo') {
+            when {
+                branch 'main'
+            }
+            steps {
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/main"]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [],
+                    userRemoteConfigs: [[url: "https://${env.HELM_CHART_REPO}", credentialsId: 'GitHub-cred']]
+                ])
+            }
+        }
+
+        stage('Update Helm Chart') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    sh """
+                    sed -i 's/version:.*/version: "1.0.${env.BUILD_NUMBER}"/' ${env.HELM_CHART_PATH}values.yaml
+                    sed -i 's/version:.*/version: 1.0.${env.BUILD_NUMBER}/' ${env.HELM_CHART_PATH}Chart.yaml
+                    echo "Helm chart updated to version 1.0.${env.BUILD_NUMBER}"
+                    """
+                }
+            }
+        }
+
+        stage('Commit Changes to chart repo') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'GitHub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
+                        sh """
+                        git config --global --add safe.directory ${WORKSPACE}
+                        git config user.name "jenkins"
+                        git config user.email "jenkins@example.com"
+                        git add .
+                        git commit -m "${COMMIT_MESSAGE}"
+                        git push https://${USERNAME}:${PASSWORD}@${env.HELM_CHART_REPO} HEAD:main
+                        """
+                    }
+                }
+            }
         }
     }
 }
