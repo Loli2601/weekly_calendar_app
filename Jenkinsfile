@@ -2,7 +2,7 @@
 pipeline {
     agent {
         kubernetes {
-            yamlFile 'jenkins/runner.yaml'
+            yamlFile 'runner.yaml'
             defaultContainer 'builder'
         }
     }
@@ -10,10 +10,8 @@ pipeline {
     environment {
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
         DOCKERHUB_URL = 'https://registry.hub.docker.com'
-
         GITHUB_API_URL = 'https://api.github.com' // For pull requests
         GITHUB_REPO = 'Loli2601/weekly_calendar_app' 
-
         HELM_CHART_REPO = "github.com/Loli2601/weekly_calendar_app_chart.git"
         HELM_CHART_PATH = 'calendar_app/'
         COMMIT_MESSAGE = "Updated chart version by Jenkins to 1.0.${env.BUILD_NUMBER}"
