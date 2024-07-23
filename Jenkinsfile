@@ -2,18 +2,16 @@
 pipeline {
     agent {
         kubernetes {
-            yamlFile 'jenkins/runner.yaml'
+            yamlFile 'runner.yaml'
             defaultContainer 'builder'
         }
-    }
+    } 
 
     environment {
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
         DOCKERHUB_URL = 'https://registry.hub.docker.com'
-
         GITHUB_API_URL = 'https://api.github.com' // For pull requests
         GITHUB_REPO = 'Loli2601/weekly_calendar_app' 
-
         HELM_CHART_REPO = "github.com/Loli2601/weekly_calendar_app_chart.git"
         HELM_CHART_PATH = 'calendar_app/'
         COMMIT_MESSAGE = "Updated chart version by Jenkins to 1.0.${env.BUILD_NUMBER}"
@@ -26,23 +24,20 @@ pipeline {
             }
         }
 
-        stage("Setup tests") {
+        stage("Setup Environment") {
             steps {
                 sh "apk update && apk add py-pip"
                 sh "pip install -r requirements.txt -r tests/requirements.txt"
             }
         }
 
-        stage("Run tests") {
-            steps {
-                sh "pytest --cov"
+         stage("Build Docker Image") {
+            when {
+                branch pattern: "feature.*", comparator: "REGEXP"
             }
-        }
-
-        stage("Build docker image") {
             steps {
                 script {
-                    dockerImage = docker.build("${DOCKER_IMAGE}:1.0.${env.BUILD_NUMBER}", "--no-cache .")
+                    dockerImage = docker.build("${DOCKER_IMAGE}:${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "--no-cache .")
                 }
             }
         }
@@ -61,7 +56,7 @@ pipeline {
                         def pullRequestBody = "Automatically generated merge request for branch ${branchName} from Jenkins"
 
                         sh """
-                            curl -X POST -u ${PASSWORD}:x-oauth-basic \
+                            curl -X POST -u ${USERNAME}:${PASSWORD} \
                             -d '{ "title": "${pullRequestTitle}", "body": "${pullRequestBody}", "head": "${branchName}", "base": "main" }' \
                             ${GITHUB_API_URL}/repos/${GITHUB_REPO}/pulls
                         """
@@ -135,11 +130,18 @@ pipeline {
                         git config user.email "jenkins@example.com"
                         git add .
                         git commit -m "${COMMIT_MESSAGE}"
-                        git push https://${USERNAME}:${PASSWORD}@${env.HELM_CHART_REPO} HEAD:main
+                        git push https://${USERNAME}:${PASSWORD}@github.com/Loli2601/weekly_calendar_app_chart.git HEAD:main
                         """
                     }
                 }
             }
+            
+            stage('Archive Jenkinsfile') {
+            steps {
+                archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
+                }
+             }
+        
         }
     }
 }
