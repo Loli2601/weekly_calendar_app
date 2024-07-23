@@ -4,7 +4,7 @@ pipeline {
             yamlFile 'runner.yaml'
             defaultContainer 'builder'
         }
-    } 
+    }
 
     environment {
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
@@ -19,7 +19,16 @@ pipeline {
     stages {
         stage("Checkout code") {
             steps {
-                checkout scm
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/main"]],
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [],
+                    userRemoteConfigs: [[
+                        credentialsId: 'GitHub-cred',
+                        url: 'https://github.com/Loli2601/weekly_calendar_app'
+                    ]]
+                ])
             }
         }
 
@@ -102,7 +111,10 @@ pipeline {
                     branches: [[name: "*/main"]],
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [],
-                    userRemoteConfigs: [[url: "https://${env.HELM_CHART_REPO}", credentialsId: 'GitHub-cred']]
+                    userRemoteConfigs: [[
+                        credentialsId: 'GitHub-cred',
+                        url: "https://${env.HELM_CHART_REPO}"
+                    ]]
                 ])
             }
         }
