@@ -5,7 +5,7 @@ pipeline {
             yamlFile 'runner.yaml'
             defaultContainer 'builder'
         }
-    }
+    } 
 
     environment {
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
