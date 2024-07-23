@@ -1,4 +1,3 @@
-
 pipeline {
     agent {
         kubernetes {
@@ -11,7 +10,7 @@ pipeline {
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
         DOCKERHUB_URL = 'https://registry.hub.docker.com'
         GITHUB_API_URL = 'https://api.github.com' // For pull requests
-        GITHUB_REPO = 'Loli2601/weekly_calendar_app' 
+        GITHUB_REPO = 'Loli2601/weekly_calendar_app'
         HELM_CHART_REPO = "github.com/Loli2601/weekly_calendar_app_chart.git"
         HELM_CHART_PATH = 'calendar_app/'
         COMMIT_MESSAGE = "Updated chart version by Jenkins to 1.0.${env.BUILD_NUMBER}"
@@ -31,9 +30,15 @@ pipeline {
             }
         }
 
-         stage("Build Docker Image") {
+        stage("Run tests") {
+            steps {
+                sh "pytest --cov"
+            }
+        }
+
+        stage("Build Docker Image") {
             when {
-                branch pattern: "feature.*", comparator: "REGEXP"
+                branch pattern: "feature/.*", comparator: "REGEXP"
             }
             steps {
                 script {
@@ -135,13 +140,15 @@ pipeline {
                     }
                 }
             }
-            
-            stage('Archive Jenkinsfile') {
+        }
+
+        stage('Archive Jenkinsfile') {
+            when {
+                branch 'main'
+            }
             steps {
                 archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
-                }
-             }
-        
+            }
         }
     }
 }
