@@ -139,6 +139,11 @@ pipeline {
                         """
                     }
                 }
+<<<<<<< HEAD
+            } 
+            
+            stage('Archive Jenkinsfile') {
+=======
             }
         }
 
@@ -146,6 +151,7 @@ pipeline {
             when {
                 branch 'main'
             }
+>>>>>>> ae062cab9caa04b2b417628a8426a5ffedccbefc
             steps {
                 archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
             }
