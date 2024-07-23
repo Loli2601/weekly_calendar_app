@@ -133,7 +133,7 @@ pipeline {
                         git config user.email "jenkins@example.com"
                         git add .
                         git commit -m "${COMMIT_MESSAGE}"
-                        git push https://${USERNAME}:${PASSWORD}@${env.HELM_CHART_REPO} HEAD:main
+                        git push https://${Loli2601}:${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}@github.com/Loli2601/weekly_calendar_app_chart.git HEAD:main
                         """
                     }
                 }
