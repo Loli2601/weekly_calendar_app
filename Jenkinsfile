@@ -7,6 +7,7 @@ pipeline {
     }
 
     environment {
+        LOGGING_ID = '11cbcb73-1cd6-45ac-b5ca-3f90cbff2a7e'
         DOCKER_IMAGE = 'hilabarak/weekly_calendar_app'
         DOCKERHUB_URL = 'https://registry.hub.docker.com'
         GITHUB_API_URL = 'https://api.github.com' // For pull requests
@@ -19,11 +20,10 @@ pipeline {
     stages {
         stage("Checkout code") {
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Checking out code"
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: "*/main"]],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
+                    branches: [[name: "*/${env.BRANCH_NAME}"]],
                     userRemoteConfigs: [[
                         credentialsId: 'GitHub-cred',
                         url: 'https://github.com/Loli2601/weekly_calendar_app'
@@ -34,14 +34,9 @@ pipeline {
 
         stage("Setup Environment") {
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Setting up environment"
                 sh "apk update && apk add py-pip"
                 sh "pip install -r requirements.txt -r tests/requirements.txt"
-            }
-        }
-
-        stage("Run tests") {
-            steps {
-                sh "pytest --cov"
             }
         }
 
@@ -50,19 +45,26 @@ pipeline {
                 branch pattern: "feature/.*", comparator: "REGEXP"
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Building Docker image"
                 script {
                     dockerImage = docker.build("${DOCKER_IMAGE}:${env.BRANCH_NAME}-${env.BUILD_NUMBER}", "--no-cache .")
                 }
             }
         }
 
+        stage("Run tests") {
+            steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Running tests"
+                sh "pytest --cov"
+            }
+        }
+
         stage('Create merge request') {
             when {
-                not {
-                    branch 'main'
-                }
+                branch pattern: "feature/.*", comparator: "REGEXP"
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Creating merge request"
                 withCredentials([usernamePassword(credentialsId: 'GitHub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                     script {
                         def branchName = env.BRANCH_NAME
@@ -79,11 +81,34 @@ pipeline {
             }
         }
 
+        stage('Merge Code') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Merging code"
+                // Assuming the merge is handled by the merge request process
+            }
+        }
+
+        stage('Release Actions') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Performing release actions"
+                script {
+                    // Additional release actions can be added here
+                }
+            }
+        }
+
         stage('Push Docker image') {
             when {
                 branch 'main'
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Pushing Docker image"
                 script {
                     docker.withRegistry(DOCKERHUB_URL, 'DockerHub-cred') {
                         dockerImage.push("1.0.${env.BUILD_NUMBER}")
@@ -97,6 +122,7 @@ pipeline {
                 branch 'main'
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Cleaning workspace"
                 cleanWs()
             }
         }
@@ -106,11 +132,10 @@ pipeline {
                 branch 'main'
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Checking out Helm chart repo"
                 checkout([
                     $class: 'GitSCM',
                     branches: [[name: "*/main"]],
-                    doGenerateSubmoduleConfigurations: false,
-                    extensions: [],
                     userRemoteConfigs: [[
                         credentialsId: 'GitHub-cred',
                         url: "https://${env.HELM_CHART_REPO}"
@@ -124,6 +149,7 @@ pipeline {
                 branch 'main'
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Updating Helm chart"
                 script {
                     sh """
                     sed -i 's/version:.*/version: "1.0.${env.BUILD_NUMBER}"/' ${env.HELM_CHART_PATH}values.yaml
@@ -139,6 +165,7 @@ pipeline {
                 branch 'main'
             }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Committing changes to chart repo"
                 script {
                     withCredentials([usernamePassword(credentialsId: 'GitHub-cred', usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD')]) {
                         sh """
@@ -152,9 +179,14 @@ pipeline {
                     }
                 }
             }
-            
-            stage('Archive Jenkinsfile') {
+        }
+
+        stage('Archive Jenkinsfile') {
+            when {
+                branch 'main'
+            }
             steps {
+                echo "Logging ID: ${env.LOGGING_ID} - Archiving Jenkinsfile"
                 archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
             }
         }
