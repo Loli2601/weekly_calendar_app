@@ -152,16 +152,11 @@ pipeline {
                     }
                 }
             }
-        }
-
-        stage('Archive Jenkinsfile') {
-            when {
-                branch 'main'
-            }
+            
+            stage('Archive Jenkinsfile') {
             steps {
                 archiveArtifacts artifacts: 'Jenkinsfile', followSymlinks: false
             }
         }
     }
 }
-
