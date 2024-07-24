@@ -40,6 +40,13 @@ pipeline {
             }
         }
 
+        stage("Run tests") {
+            steps {
+                sh "pytest --cov"
+            }
+        }
+
+
         stage("Build Docker Image") {
             when {
                 branch pattern: "feature/.*", comparator: "REGEXP"
