@@ -49,7 +49,7 @@ pipeline {
 
         stage("Build Docker Image") {
             when {
-                branch pattern: "feature/.*", comparator: "REGEXP"
+                branch pattern: "feature.*", comparator: "REGEXP"
             }
             steps {
                 echo "Logging ID: ${env.LOGGING_ID} - Building Docker image"
